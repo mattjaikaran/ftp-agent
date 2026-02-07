@@ -76,7 +76,9 @@ public class StateStoreTests : IAsyncDisposable
 
         var entries = Enumerable.Range(1, 20).Select(i => new FileEntry
         {
-            Id = $"f{i}", Name = $"file{i}.csv", LegacyConfig = $"host=server{i}"
+            Id = $"f{i}",
+            Name = $"file{i}.csv",
+            LegacyConfig = $"host=server{i}"
         }).ToList();
 
         await _store.LoadEntriesAsync(entries);

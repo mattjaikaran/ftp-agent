@@ -22,7 +22,7 @@
     <Content Include="..\..\config\appsettings.json" Link="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\config\appsettings.Development.json" Link="appsettings.Development.json">
+    <Content Include="..\..\config\appsettings.Development.json" Link="appsettings.Development.json" Condition="Exists('..\..\config\appsettings.Development.json')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </Content>

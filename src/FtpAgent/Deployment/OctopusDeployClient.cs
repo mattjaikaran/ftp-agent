@@ -1,11 +1,11 @@
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using FtpAgent.Configuration;
 using FtpAgent.Orchestration;
 using FtpAgent.State;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace FtpAgent.Deployment;
 

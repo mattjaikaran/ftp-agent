@@ -1,8 +1,8 @@
+using System.Diagnostics;
+using System.Text;
 using FtpAgent.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Diagnostics;
-using System.Text;
 
 namespace FtpAgent.Git;
 

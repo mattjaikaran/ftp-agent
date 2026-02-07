@@ -1,8 +1,8 @@
+using System.Text;
 using FtpAgent.Configuration;
 using FtpAgent.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Text;
 
 namespace FtpAgent.Config;
 

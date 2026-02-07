@@ -1,6 +1,6 @@
+using System.Text.RegularExpressions;
 using FtpAgent.State;
 using Microsoft.Extensions.Logging;
-using System.Text.RegularExpressions;
 
 namespace FtpAgent.Config;
 

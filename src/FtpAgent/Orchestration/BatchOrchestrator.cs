@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using FtpAgent.CI;
 using FtpAgent.Config;
 using FtpAgent.Configuration;
@@ -8,7 +9,6 @@ using FtpAgent.Monitoring;
 using FtpAgent.State;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Diagnostics;
 
 namespace FtpAgent.Orchestration;
 

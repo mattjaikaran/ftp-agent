@@ -1,10 +1,10 @@
+using System.Text;
+using System.Text.Json;
 using FtpAgent.Configuration;
 using FtpAgent.Infrastructure;
 using FtpAgent.State;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Text;
-using System.Text.Json;
 
 namespace FtpAgent.Diagnostics;
 

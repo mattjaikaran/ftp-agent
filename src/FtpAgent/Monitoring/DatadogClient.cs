@@ -1,10 +1,10 @@
+using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 using FtpAgent.Configuration;
 using FtpAgent.State;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Net.Http.Json;
-using System.Text;
-using System.Text.Json;
 
 namespace FtpAgent.Monitoring;
 
