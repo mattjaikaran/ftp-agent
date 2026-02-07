@@ -420,10 +420,11 @@ dotnet test src/FtpAgent.Tests/ --verbosity normal
 | Document | Description |
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Detailed architecture, component design, pseudo-code, and data flow |
-| SETUP.md | Step-by-step environment setup and credential configuration |
-| TROUBLESHOOTING.md | Common issues, error messages, and resolution steps |
-| CONTRIBUTING.md | Contribution guidelines, code standards, and PR process |
-| WALKTHROUGH.md | End-to-end walkthrough of a migration batch with annotated logs |
+| [docs/DIAGRAMS.md](docs/DIAGRAMS.md) | Mermaid diagrams: flowcharts, state machines, ER, sequence, class diagrams |
+| [docs/SETUP.md](docs/SETUP.md) | Step-by-step environment setup and credential configuration |
+| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common issues, error messages, and resolution steps |
+| [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Contribution guidelines, code standards, and PR process |
+| [docs/WALKTHROUGH.md](docs/WALKTHROUGH.md) | End-to-end walkthrough of a migration batch with annotated logs |
 
 ---
 

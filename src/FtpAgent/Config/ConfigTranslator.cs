@@ -1,7 +1,7 @@
-using FtpAgent;
+using FtpAgent.Configuration;
+using FtpAgent.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Diagnostics;
 using System.Text;
 
 namespace FtpAgent.Config;
@@ -13,18 +13,18 @@ namespace FtpAgent.Config;
 public class ConfigTranslator
 {
     private readonly ILogger<ConfigTranslator> _logger;
-    private readonly CopilotConfig _copilotConfig;
+    private readonly CopilotCliRunner _copilotRunner;
     private readonly string _promptTemplate;
 
     public ConfigTranslator(
         ILogger<ConfigTranslator> logger,
-        IOptions<CopilotConfig> copilotConfig)
+        IOptions<CopilotConfig> copilotConfig,
+        CopilotCliRunner copilotRunner)
     {
         _logger = logger;
-        _copilotConfig = copilotConfig.Value;
+        _copilotRunner = copilotRunner;
 
-        // Load the prompt template at startup
-        var promptPath = _copilotConfig.ConfigTranslationPromptPath;
+        var promptPath = copilotConfig.Value.ConfigTranslationPromptPath;
         if (File.Exists(promptPath))
         {
             _promptTemplate = File.ReadAllText(promptPath);
@@ -40,9 +40,6 @@ public class ConfigTranslator
     /// <summary>
     /// Translates a legacy configuration string to the new format using Copilot CLI.
     /// </summary>
-    /// <param name="legacyConfig">The raw legacy configuration content.</param>
-    /// <returns>The translated configuration in the new format.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when translation fails.</exception>
     public async Task<string> TranslateAsync(string legacyConfig)
     {
         if (string.IsNullOrWhiteSpace(legacyConfig))
@@ -54,113 +51,24 @@ public class ConfigTranslator
 
         _logger.LogDebug("Invoking Copilot CLI for config translation ({Length} chars input)", legacyConfig.Length);
 
-        var result = await InvokeCopilotCliAsync(prompt);
+        var result = await _copilotRunner.InvokeAsync(prompt);
 
         if (string.IsNullOrWhiteSpace(result))
         {
             throw new InvalidOperationException("Copilot CLI returned empty translation result");
         }
 
-        // Extract the config block from the response if wrapped in markdown code fences
         var translatedConfig = ExtractConfigBlock(result);
-
         _logger.LogDebug("Translation complete ({OutputLength} chars output)", translatedConfig.Length);
 
         return translatedConfig;
     }
 
     /// <summary>
-    /// Invokes the GitHub Copilot CLI as an external process and captures the output.
-    /// </summary>
-    private async Task<string> InvokeCopilotCliAsync(string prompt)
-    {
-        // Build the Copilot CLI command
-        // Uses `gh copilot suggest` or a custom agent command depending on configuration
-        var arguments = BuildCopilotArguments(prompt);
-
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = _copilotConfig.CliPath,
-            Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            RedirectStandardInput = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            Environment =
-            {
-                ["GH_COPILOT_MODEL"] = _copilotConfig.Model
-            }
-        };
-
-        using var process = new Process { StartInfo = startInfo };
-        var stdout = new StringBuilder();
-        var stderr = new StringBuilder();
-
-        process.OutputDataReceived += (_, e) =>
-        {
-            if (e.Data is not null)
-                stdout.AppendLine(e.Data);
-        };
-
-        process.ErrorDataReceived += (_, e) =>
-        {
-            if (e.Data is not null)
-                stderr.AppendLine(e.Data);
-        };
-
-        _logger.LogDebug("Starting process: {FileName} {Arguments}", startInfo.FileName, arguments);
-
-        process.Start();
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-
-        // Write prompt to stdin if using pipe mode
-        await process.StandardInput.WriteAsync(prompt);
-        process.StandardInput.Close();
-
-        var timeout = TimeSpan.FromSeconds(_copilotConfig.TimeoutSeconds);
-        using var cts = new CancellationTokenSource(timeout);
-
-        try
-        {
-            await process.WaitForExitAsync(cts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogError("Copilot CLI timed out after {Timeout} seconds", _copilotConfig.TimeoutSeconds);
-            process.Kill(entireProcessTree: true);
-            throw new TimeoutException($"Copilot CLI did not respond within {_copilotConfig.TimeoutSeconds} seconds");
-        }
-
-        if (process.ExitCode != 0)
-        {
-            var errorOutput = stderr.ToString().Trim();
-            _logger.LogError("Copilot CLI exited with code {ExitCode}. Stderr: {Stderr}", process.ExitCode, errorOutput);
-            throw new InvalidOperationException($"Copilot CLI failed (exit code {process.ExitCode}): {errorOutput}");
-        }
-
-        return stdout.ToString().Trim();
-    }
-
-    /// <summary>
-    /// Builds CLI arguments for invoking Copilot. Adjust based on the actual CLI interface.
-    /// </summary>
-    private string BuildCopilotArguments(string prompt)
-    {
-        // TODO: Adjust these arguments to match the actual Copilot CLI invocation format.
-        // Current implementation assumes `gh copilot` extension with stdin support.
-        // Alternative: write prompt to a temp file and pass via --file flag.
-        return $"copilot suggest --model {_copilotConfig.Model} --stdin";
-    }
-
-    /// <summary>
     /// Extracts a configuration block from a markdown-fenced response.
-    /// If the response contains ```json or ```yaml fences, extracts the content within.
     /// </summary>
-    private static string ExtractConfigBlock(string response)
+    internal static string ExtractConfigBlock(string response)
     {
-        // Look for fenced code blocks (```json ... ``` or ```yaml ... ``` or ``` ... ```)
         var lines = response.Split('\n');
         var inBlock = false;
         var blockContent = new StringBuilder();
@@ -184,7 +92,6 @@ public class ConfigTranslator
             }
         }
 
-        // If we extracted a block, return it; otherwise return the full response
         var extracted = blockContent.ToString().Trim();
         return string.IsNullOrEmpty(extracted) ? response.Trim() : extracted;
     }

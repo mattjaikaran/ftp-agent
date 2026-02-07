@@ -1,5 +1,6 @@
 using FtpAgent.CI;
 using FtpAgent.Config;
+using FtpAgent.Configuration;
 using FtpAgent.Deployment;
 using FtpAgent.Diagnostics;
 using FtpAgent.Git;
@@ -13,12 +14,13 @@ namespace FtpAgent.Orchestration;
 
 /// <summary>
 /// Main autonomous loop that orchestrates the entire migration pipeline.
-/// Processes files in batches through: translate -> commit -> build -> deploy -> verify -> diagnose.
+/// Processes files in batches through: load -> translate -> commit -> build -> deploy -> verify -> diagnose.
 /// </summary>
 public class BatchOrchestrator
 {
     private readonly ILogger<BatchOrchestrator> _logger;
     private readonly AgentConfig _config;
+    private readonly LegacyConfigParser _legacyConfigParser;
     private readonly ConfigTranslator _configTranslator;
     private readonly NewConfigWriter _configWriter;
     private readonly GitManager _gitManager;
@@ -33,6 +35,7 @@ public class BatchOrchestrator
     public BatchOrchestrator(
         ILogger<BatchOrchestrator> logger,
         IOptions<AgentConfig> config,
+        LegacyConfigParser legacyConfigParser,
         ConfigTranslator configTranslator,
         NewConfigWriter configWriter,
         GitManager gitManager,
@@ -45,6 +48,7 @@ public class BatchOrchestrator
     {
         _logger = logger;
         _config = config.Value;
+        _legacyConfigParser = legacyConfigParser;
         _configTranslator = configTranslator;
         _configWriter = configWriter;
         _gitManager = gitManager;
@@ -63,6 +67,9 @@ public class BatchOrchestrator
     {
         _logger.LogInformation("Initializing migration state store");
         await _stateStore.InitializeAsync();
+
+        // Load entries from CSV if the database is empty and a source path is configured
+        await LoadEntriesIfNeededAsync();
 
         var batchNumber = 0;
         var overallStopwatch = Stopwatch.StartNew();
@@ -101,6 +108,27 @@ public class BatchOrchestrator
         report.BatchResults = _batchResults;
 
         _logger.LogInformation("Migration run complete.\n{Report}", report.ToSummary());
+    }
+
+    /// <summary>
+    /// Loads file entries from the configured CSV source into the state store if the database is empty.
+    /// </summary>
+    private async Task LoadEntriesIfNeededAsync()
+    {
+        if (!await _stateStore.HasPendingFiles())
+        {
+            var sourcePath = _config.LegacyConfigSourcePath;
+            if (string.IsNullOrEmpty(sourcePath))
+            {
+                _logger.LogWarning("No pending files and LegacyConfigSourcePath is not configured. Nothing to process.");
+                return;
+            }
+
+            _logger.LogInformation("No entries in database. Loading from {SourcePath}", sourcePath);
+            var entries = await _legacyConfigParser.ParseFromFileAsync(sourcePath);
+            var loaded = await _stateStore.LoadEntriesAsync(entries);
+            _logger.LogInformation("Loaded {Count} file entries into state store", loaded);
+        }
     }
 
     private async Task<BatchResult> ProcessBatchAsync(int batchNumber, CancellationToken cancellationToken)
@@ -153,7 +181,7 @@ public class BatchOrchestrator
             return result;
         }
 
-        // Step 3: Commit and push changes
+        // Step 3: Commit and push changes (scoped to configs directory)
         string commitHash;
         try
         {
@@ -232,7 +260,8 @@ public class BatchOrchestrator
             result.DeploymentId = deployResult.DeploymentId;
             _logger.LogInformation("Deployment triggered. ID: {DeploymentId}. Waiting for completion...", deployResult.DeploymentId);
 
-            deployResult = await _deploymentClient.WaitForDeploymentAsync(deployResult.DeploymentId, deployTimeout);
+            deployResult = await _deploymentClient.WaitForDeploymentAsync(
+                deployResult.DeploymentId, deployTimeout, cancellationToken);
 
             if (!deployResult.Success)
             {
@@ -288,6 +317,7 @@ public class BatchOrchestrator
                         _logger.LogInformation("Diagnostic engine suggests recoverable fix for {FileName}. Queueing retry.", file.Name);
                         file.NewConfig = diagnostic.RevisedConfig;
                         file.LastError = $"Auto-diagnosed: {diagnostic.RootCause}";
+                        await _stateStore.UpdateNewConfig(file.Id, diagnostic.RevisedConfig);
                         await _stateStore.IncrementRetry(file.Id, file.LastError);
                         result.Retrying.Add(file);
                     }

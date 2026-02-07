@@ -1,4 +1,4 @@
-using FtpAgent;
+using FtpAgent.Configuration;
 using FtpAgent.Orchestration;
 using FtpAgent.State;
 using Microsoft.Extensions.Logging;
@@ -95,14 +95,17 @@ public class OctopusDeployClient : IDeploymentClient
     }
 
     /// <inheritdoc/>
-    public async Task<DeploymentResult> WaitForDeploymentAsync(string deploymentId, TimeSpan timeout)
+    public async Task<DeploymentResult> WaitForDeploymentAsync(
+        string deploymentId,
+        TimeSpan timeout,
+        CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Waiting for deployment {DeploymentId} (timeout: {Timeout})", deploymentId, timeout);
 
         var deadline = DateTime.UtcNow + timeout;
         var pollInterval = TimeSpan.FromSeconds(_agentConfig.PollIntervalSeconds);
 
-        while (DateTime.UtcNow < deadline)
+        while (DateTime.UtcNow < deadline && !cancellationToken.IsCancellationRequested)
         {
             try
             {
@@ -143,7 +146,7 @@ public class OctopusDeployClient : IDeploymentClient
                 _logger.LogWarning(ex, "Error polling deployment status for {DeploymentId}", deploymentId);
             }
 
-            await Task.Delay(pollInterval);
+            await Task.Delay(pollInterval, cancellationToken);
         }
 
         _logger.LogError("Deployment {DeploymentId} timed out after {Timeout}", deploymentId, timeout);

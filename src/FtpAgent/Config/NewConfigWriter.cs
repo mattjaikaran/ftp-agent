@@ -1,4 +1,4 @@
-using FtpAgent;
+using FtpAgent.Configuration;
 using FtpAgent.State;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

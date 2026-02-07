@@ -1,4 +1,5 @@
 using FluentAssertions;
+using FtpAgent.Configuration;
 using FtpAgent.Orchestration;
 using FtpAgent.State;
 using Xunit;

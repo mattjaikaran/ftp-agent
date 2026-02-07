@@ -1,8 +1,10 @@
 using FtpAgent.CI;
 using FtpAgent.Config;
+using FtpAgent.Configuration;
 using FtpAgent.Deployment;
 using FtpAgent.Diagnostics;
 using FtpAgent.Git;
+using FtpAgent.Infrastructure;
 using FtpAgent.Monitoring;
 using FtpAgent.Orchestration;
 using FtpAgent.State;
@@ -36,6 +38,7 @@ public class Program
         builder.Services.Configure<CopilotConfig>(builder.Configuration.GetSection("Copilot"));
 
         // Register infrastructure services
+        builder.Services.AddSingleton<CopilotCliRunner>();
         builder.Services.AddSingleton<StateStore>();
         builder.Services.AddSingleton<LegacyConfigParser>();
         builder.Services.AddSingleton<NewConfigWriter>();
@@ -116,56 +119,4 @@ public class Program
             return 2;
         }
     }
-}
-
-/// <summary>
-/// Marker record for dependency injection to indicate dry-run mode.
-/// </summary>
-public record DryRunFlag(bool Enabled);
-
-/// <summary>
-/// Configuration for GitHub integration.
-/// </summary>
-public class GitHubConfig
-{
-    public string Repository { get; set; } = string.Empty;
-    public string BaseBranch { get; set; } = "main";
-    public string WorkflowName { get; set; } = string.Empty;
-    public string TargetRepoPath { get; set; } = string.Empty;
-}
-
-/// <summary>
-/// Configuration for Octopus Deploy integration.
-/// </summary>
-public class OctopusDeployConfig
-{
-    public string ServerUrl { get; set; } = string.Empty;
-    public string ApiKey { get; set; } = string.Empty;
-    public string ProjectName { get; set; } = string.Empty;
-    public string EnvironmentName { get; set; } = string.Empty;
-    public string SpaceId { get; set; } = "Spaces-1";
-}
-
-/// <summary>
-/// Configuration for Datadog integration.
-/// </summary>
-public class DatadogConfig
-{
-    public string ApiUrl { get; set; } = "https://api.datadoghq.com";
-    public string ApiKey { get; set; } = string.Empty;
-    public string AppKey { get; set; } = string.Empty;
-    public string ServiceName { get; set; } = string.Empty;
-    public string Environment { get; set; } = string.Empty;
-}
-
-/// <summary>
-/// Configuration for GitHub Copilot CLI integration.
-/// </summary>
-public class CopilotConfig
-{
-    public string CliPath { get; set; } = "gh";
-    public string Model { get; set; } = "claude-opus-4-5-20250514";
-    public int TimeoutSeconds { get; set; } = 120;
-    public string ConfigTranslationPromptPath { get; set; } = "prompts/config-translation.md";
-    public string ErrorDiagnosisPromptPath { get; set; } = "prompts/error-diagnosis.md";
 }

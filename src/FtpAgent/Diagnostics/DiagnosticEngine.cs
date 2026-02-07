@@ -1,8 +1,8 @@
-using FtpAgent;
+using FtpAgent.Configuration;
+using FtpAgent.Infrastructure;
 using FtpAgent.State;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 
@@ -15,7 +15,7 @@ namespace FtpAgent.Diagnostics;
 public class DiagnosticEngine
 {
     private readonly ILogger<DiagnosticEngine> _logger;
-    private readonly CopilotConfig _copilotConfig;
+    private readonly CopilotCliRunner _copilotRunner;
     private readonly string _promptTemplate;
 
     /// <summary>
@@ -36,12 +36,13 @@ public class DiagnosticEngine
 
     public DiagnosticEngine(
         ILogger<DiagnosticEngine> logger,
-        IOptions<CopilotConfig> copilotConfig)
+        IOptions<CopilotConfig> copilotConfig,
+        CopilotCliRunner copilotRunner)
     {
         _logger = logger;
-        _copilotConfig = copilotConfig.Value;
+        _copilotRunner = copilotRunner;
 
-        var promptPath = _copilotConfig.ErrorDiagnosisPromptPath;
+        var promptPath = copilotConfig.Value.ErrorDiagnosisPromptPath;
         if (File.Exists(promptPath))
         {
             _promptTemplate = File.ReadAllText(promptPath);
@@ -56,11 +57,7 @@ public class DiagnosticEngine
 
     /// <summary>
     /// Diagnoses a file migration failure by analyzing error logs and current configuration.
-    /// Uses the Copilot CLI for LLM-powered analysis and augments with known issue patterns.
     /// </summary>
-    /// <param name="file">The file entry that failed.</param>
-    /// <param name="errors">List of error messages from the failure.</param>
-    /// <returns>Diagnostic result with analysis, suggested changes, and optionally a revised config.</returns>
     public async Task<DiagnosticResult> DiagnoseAsync(FileEntry file, List<string> errors)
     {
         _logger.LogInformation("Diagnosing failure for {FileName} ({FileId}). Error count: {ErrorCount}",
@@ -81,7 +78,7 @@ public class DiagnosticEngine
         try
         {
             var prompt = BuildDiagnosisPrompt(file, errors, knownDiagnosis);
-            var llmResponse = await InvokeCopilotCliAsync(prompt);
+            var llmResponse = await _copilotRunner.InvokeAsync(prompt);
 
             var parsed = ParseDiagnosticResponse(llmResponse);
             result.Analysis = parsed.Analysis;
@@ -108,9 +105,6 @@ public class DiagnosticEngine
         return result;
     }
 
-    /// <summary>
-    /// Checks error messages against the known issue database.
-    /// </summary>
     private List<string> CheckKnownIssues(List<string> errors)
     {
         var matches = new List<string>();
@@ -129,9 +123,6 @@ public class DiagnosticEngine
         return matches.Distinct().ToList();
     }
 
-    /// <summary>
-    /// Builds the full diagnosis prompt with file context, errors, and known issue hints.
-    /// </summary>
     private string BuildDiagnosisPrompt(FileEntry file, List<string> errors, List<string> knownMatches)
     {
         var errorBlock = string.Join("\n", errors.Select((e, i) => $"  {i + 1}. {e}"));
@@ -152,9 +143,8 @@ public class DiagnosticEngine
 
     /// <summary>
     /// Parses the LLM response into a structured diagnostic result.
-    /// Expects a JSON response or structured text with labeled sections.
     /// </summary>
-    private DiagnosticResult ParseDiagnosticResponse(string response)
+    internal static DiagnosticResult ParseDiagnosticResponse(string response)
     {
         var result = new DiagnosticResult();
 
@@ -203,7 +193,6 @@ public class DiagnosticEngine
         result.IsRecoverable = response.Contains("recoverable", StringComparison.OrdinalIgnoreCase)
                             || response.Contains("can be fixed", StringComparison.OrdinalIgnoreCase);
 
-        // Extract root cause from "Root cause:" or "Cause:" labels
         var rootCauseLine = response.Split('\n')
             .FirstOrDefault(l => l.TrimStart().StartsWith("Root cause:", StringComparison.OrdinalIgnoreCase)
                               || l.TrimStart().StartsWith("Cause:", StringComparison.OrdinalIgnoreCase));
@@ -213,7 +202,6 @@ public class DiagnosticEngine
             result.RootCause = rootCauseLine.Split(':', 2).LastOrDefault()?.Trim() ?? string.Empty;
         }
 
-        // Extract code block as revised config
         var configBlock = ExtractCodeBlock(response);
         if (!string.IsNullOrEmpty(configBlock))
         {
@@ -223,9 +211,6 @@ public class DiagnosticEngine
         return result;
     }
 
-    /// <summary>
-    /// Extracts a code block from markdown-formatted text.
-    /// </summary>
     private static string ExtractCodeBlock(string text)
     {
         var lines = text.Split('\n');
@@ -250,71 +235,6 @@ public class DiagnosticEngine
         }
 
         return block.ToString().Trim();
-    }
-
-    /// <summary>
-    /// Invokes the Copilot CLI for LLM-powered diagnosis.
-    /// </summary>
-    private async Task<string> InvokeCopilotCliAsync(string prompt)
-    {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = _copilotConfig.CliPath,
-            Arguments = $"copilot suggest --model {_copilotConfig.Model} --stdin",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            RedirectStandardInput = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            Environment =
-            {
-                ["GH_COPILOT_MODEL"] = _copilotConfig.Model
-            }
-        };
-
-        using var process = new Process { StartInfo = startInfo };
-        var stdout = new StringBuilder();
-        var stderr = new StringBuilder();
-
-        process.OutputDataReceived += (_, e) =>
-        {
-            if (e.Data is not null)
-                stdout.AppendLine(e.Data);
-        };
-
-        process.ErrorDataReceived += (_, e) =>
-        {
-            if (e.Data is not null)
-                stderr.AppendLine(e.Data);
-        };
-
-        process.Start();
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-
-        await process.StandardInput.WriteAsync(prompt);
-        process.StandardInput.Close();
-
-        var timeout = TimeSpan.FromSeconds(_copilotConfig.TimeoutSeconds);
-        using var cts = new CancellationTokenSource(timeout);
-
-        try
-        {
-            await process.WaitForExitAsync(cts.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            process.Kill(entireProcessTree: true);
-            throw new TimeoutException($"Copilot CLI diagnosis timed out after {_copilotConfig.TimeoutSeconds} seconds");
-        }
-
-        if (process.ExitCode != 0)
-        {
-            throw new InvalidOperationException(
-                $"Copilot CLI diagnosis failed (exit code {process.ExitCode}): {stderr.ToString().Trim()}");
-        }
-
-        return stdout.ToString().Trim();
     }
 
     private static string GetFallbackPromptTemplate()

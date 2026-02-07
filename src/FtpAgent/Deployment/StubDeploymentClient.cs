@@ -36,14 +36,17 @@ public class StubDeploymentClient : IDeploymentClient
     }
 
     /// <inheritdoc/>
-    public async Task<DeploymentResult> WaitForDeploymentAsync(string deploymentId, TimeSpan timeout)
+    public async Task<DeploymentResult> WaitForDeploymentAsync(
+        string deploymentId,
+        TimeSpan timeout,
+        CancellationToken cancellationToken = default)
     {
         _logger.LogInformation(
             "[STUB] Waiting for deployment {DeploymentId}. Simulating 2-second deployment...",
             deploymentId);
 
         // Simulate a short deployment wait
-        await Task.Delay(TimeSpan.FromSeconds(2));
+        await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
 
         _logger.LogInformation("[STUB] Deployment {DeploymentId} completed successfully (simulated)", deploymentId);
 

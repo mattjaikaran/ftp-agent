@@ -1,4 +1,4 @@
-using FtpAgent;
+using FtpAgent.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;
@@ -37,8 +37,8 @@ public class GitManager
     {
         ValidateWorkingDirectory();
 
-        _logger.LogInformation("Staging all changes in {WorkDir}", WorkingDirectory);
-        await RunGitAsync("add", "--all");
+        _logger.LogInformation("Staging config changes in {WorkDir}", WorkingDirectory);
+        await RunGitAsync("add", "configs/");
 
         // Check if there are staged changes
         var status = await RunGitAsync("status", "--porcelain");

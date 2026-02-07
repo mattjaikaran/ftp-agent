@@ -1,4 +1,4 @@
-using FtpAgent;
+using FtpAgent.Configuration;
 using FtpAgent.State;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -244,13 +244,16 @@ public class DatadogClient
                 }
             }
 
-            // Check for success patterns
-            foreach (var pattern in SuccessPatterns)
+            // Check for success patterns (only if no errors detected for this entry)
+            if (!result.HasErrors)
             {
-                if (entry.Message.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+                foreach (var pattern in SuccessPatterns)
                 {
-                    result.FileProcessedSuccessfully = true;
-                    break;
+                    if (entry.Message.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+                    {
+                        result.FileProcessedSuccessfully = true;
+                        break;
+                    }
                 }
             }
         }
