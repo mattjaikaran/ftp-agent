@@ -71,3 +71,11 @@ Desktop.ini
 
 ## Publish profiles
 [Pp]ublish/
+
+## Environment files (never commit secrets)
+.env
+.env.*
+!.env.example
+
+## Log files
+*.log

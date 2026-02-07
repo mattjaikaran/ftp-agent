@@ -1,5 +1,6 @@
 # FTP Agent
 
+[![CI](https://github.com/mattjaikaran/ftp-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/mattjaikaran/ftp-agent/actions/workflows/ci.yml)
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![Claude Opus 4.5](https://img.shields.io/badge/LLM-Claude%20Opus%204.5-orange)](https://docs.github.com/en/copilot)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)]()
@@ -126,28 +127,50 @@ Ensure the GitHub CLI is authenticated (`gh auth login`) and has Copilot access 
 ## Quick Start
 
 ```bash
-# 1. Verify prerequisites
-dotnet --version    # Expect 8.x
-gh --version        # Expect 2.x+
-git --version       # Expect 2.x+
-
-# 2. Clone the repository
+# 1. Clone the repository
 git clone git@github.com:mattjaikaran/ftp-agent.git
 cd ftp-agent
 
-# 3. Build the project
-dotnet build src/FtpAgent/FtpAgent.csproj
+# 2. Run the automated setup script (installs .NET 8, git, gh CLI, restores packages)
+./scripts/setup.sh
 
-# 4. Set up configuration
+# 3. Set up configuration
+cp .env.example .env
+# Edit .env with your API keys and settings (see Configuration section below)
+# Or use the JSON config approach:
 cp config/appsettings.json config/appsettings.Development.json
-# Edit config/appsettings.Development.json with your API keys and settings
-# (see Configuration section below)
 
-# 5. Run in dry-run mode (no actual commits, deploys, or API calls)
-dotnet run --project src/FtpAgent -- --dry-run
+# 4. Run in dry-run mode (no actual commits, deploys, or API calls)
+make dry-run
 
-# 6. Run in full autonomous mode
-dotnet run --project src/FtpAgent
+# 5. Run in full autonomous mode
+make run
+```
+
+### Using Make Commands
+
+The project includes a `Makefile` with common tasks:
+
+```bash
+make help           # Show all available commands
+make setup          # Install .NET SDK and restore packages
+make build          # Build the solution (Release)
+make test           # Run all tests with verbose output
+make test-coverage  # Run tests with code coverage report
+make run            # Run the agent
+make dry-run        # Run in dry-run mode
+make clean          # Clean build artifacts
+make format         # Format code with dotnet format
+make format-check   # Check formatting (CI-friendly)
+make publish        # Publish self-contained binary for linux-x64
+```
+
+### Using Scripts
+
+```bash
+./scripts/setup.sh           # First-time environment setup (idempotent)
+./scripts/run.sh             # Run the agent with pre-flight checks
+./scripts/run.sh --dry-run   # Run in dry-run mode
 ```
 
 ### Dry-Run Mode
@@ -162,7 +185,7 @@ Press `Ctrl+C` at any time to request a graceful shutdown. The agent will comple
 
 ## Configuration
 
-All runtime configuration lives in `config/appsettings.json`. Create a `config/appsettings.Development.json` for local overrides (this file is excluded from publish output). Environment variables prefixed with `FTPAGENT_` will also be read.
+All runtime configuration lives in `config/appsettings.json`. Create a `config/appsettings.Development.json` for local overrides (this file is excluded from publish output). Environment variables prefixed with `FTPAGENT_` will also be read. See `.env.example` for a template of all available environment variables.
 
 ```jsonc
 {
@@ -227,9 +250,19 @@ export FTPAGENT_OctopusDeploy__ApiKey="your-api-key"
 
 ```
 ftp-agent/
+├── .editorconfig                          # Code style rules (C#, JSON, YAML, Markdown)
+├── .env.example                           # Environment variable template
 ├── .github/
-│   └── agents/
-│       └── file-migration-agent.agent.md  # GitHub Copilot agent definition
+│   ├── agents/
+│   │   └── file-migration-agent.agent.md  # GitHub Copilot agent definition
+│   └── workflows/
+│       └── ci.yml                         # CI pipeline (build, test, format check)
+├── Directory.Build.props                  # Shared MSBuild properties for all projects
+├── global.json                            # .NET SDK version pinning
+├── Makefile                               # Build automation commands
+├── scripts/
+│   ├── setup.sh                           # First-time environment setup (idempotent)
+│   └── run.sh                             # Runner script with pre-flight checks
 ├── src/
 │   ├── FtpAgent/                          # Main console application
 │   │   ├── FtpAgent.csproj               # Project file (.NET 8, SQLite, Hosting)
@@ -420,6 +453,7 @@ dotnet test src/FtpAgent.Tests/ --verbosity normal
 | Document | Description |
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Detailed architecture, component design, pseudo-code, and data flow |
+| [docs/BUSINESS-CASE.md](docs/BUSINESS-CASE.md) | Executive summary, ROI analysis, timeline, and rollout plan |
 | [docs/DIAGRAMS.md](docs/DIAGRAMS.md) | Mermaid diagrams: flowcharts, state machines, ER, sequence, class diagrams |
 | [docs/SETUP.md](docs/SETUP.md) | Step-by-step environment setup and credential configuration |
 | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common issues, error messages, and resolution steps |
