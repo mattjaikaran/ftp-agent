@@ -1,7 +1,6 @@
 # FTP Agent
 
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/download/dotnet/8.0)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Claude Opus 4.5](https://img.shields.io/badge/LLM-Claude%20Opus%204.5-orange)](https://docs.github.com/en/copilot)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)]()
 
@@ -428,6 +427,3 @@ dotnet test src/FtpAgent.Tests/ --verbosity normal
 
 ---
 
-## License
-
-This project is proprietary. See [LICENSE](LICENSE) for details.

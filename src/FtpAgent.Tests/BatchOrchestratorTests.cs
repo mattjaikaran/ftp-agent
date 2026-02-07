@@ -1,61 +1,15 @@
 using FluentAssertions;
-using FtpAgent.CI;
-using FtpAgent.Config;
-using FtpAgent.Deployment;
-using FtpAgent.Diagnostics;
-using FtpAgent.Git;
-using FtpAgent.Monitoring;
 using FtpAgent.Orchestration;
 using FtpAgent.State;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Moq;
+using Xunit;
 
 namespace FtpAgent.Tests;
 
-public class BatchOrchestratorTests
+/// <summary>
+/// Tests for AgentConfig default values.
+/// </summary>
+public class AgentConfigTests
 {
-    private readonly Mock<ILogger<BatchOrchestrator>> _loggerMock;
-    private readonly Mock<IOptions<AgentConfig>> _configMock;
-    private readonly Mock<ConfigTranslator> _translatorMock;
-    private readonly Mock<NewConfigWriter> _writerMock;
-    private readonly Mock<GitManager> _gitManagerMock;
-    private readonly Mock<GitHubActionsMonitor> _ciMonitorMock;
-    private readonly Mock<IDeploymentClient> _deploymentClientMock;
-    private readonly Mock<DatadogClient> _datadogClientMock;
-    private readonly Mock<DiagnosticEngine> _diagnosticEngineMock;
-    private readonly Mock<StateStore> _stateStoreMock;
-
-    public BatchOrchestratorTests()
-    {
-        _loggerMock = new Mock<ILogger<BatchOrchestrator>>();
-        _configMock = new Mock<IOptions<AgentConfig>>();
-        _translatorMock = new Mock<ConfigTranslator>(
-            Mock.Of<ILogger<ConfigTranslator>>(),
-            Options.Create(new CopilotConfig()));
-        _writerMock = new Mock<NewConfigWriter>(
-            Mock.Of<ILogger<NewConfigWriter>>(),
-            Options.Create(new GitHubConfig()));
-        _gitManagerMock = new Mock<GitManager>(
-            Mock.Of<ILogger<GitManager>>(),
-            Options.Create(new GitHubConfig()));
-        _ciMonitorMock = new Mock<GitHubActionsMonitor>(
-            Mock.Of<ILogger<GitHubActionsMonitor>>(),
-            Options.Create(new GitHubConfig()),
-            Options.Create(new AgentConfig()));
-        _deploymentClientMock = new Mock<IDeploymentClient>();
-        _datadogClientMock = new Mock<DatadogClient>(
-            Mock.Of<ILogger<DatadogClient>>(),
-            Mock.Of<IHttpClientFactory>(),
-            Options.Create(new DatadogConfig()));
-        _diagnosticEngineMock = new Mock<DiagnosticEngine>(
-            Mock.Of<ILogger<DiagnosticEngine>>(),
-            Options.Create(new CopilotConfig()));
-        _stateStoreMock = new Mock<StateStore>(
-            Mock.Of<ILogger<StateStore>>(),
-            Options.Create(new AgentConfig()));
-    }
-
     [Fact]
     public void AgentConfig_DefaultValues_AreReasonable()
     {
@@ -72,6 +26,27 @@ public class BatchOrchestratorTests
         config.MaxBatchesPerRun.Should().Be(0);
     }
 
+    [Fact]
+    public void AgentConfig_CanSetCustomValues()
+    {
+        var config = new AgentConfig
+        {
+            BatchSize = 50,
+            MaxRetriesPerFile = 5,
+            DeployWaitTimeoutMinutes = 60
+        };
+
+        config.BatchSize.Should().Be(50);
+        config.MaxRetriesPerFile.Should().Be(5);
+        config.DeployWaitTimeoutMinutes.Should().Be(60);
+    }
+}
+
+/// <summary>
+/// Tests for FileEntry model.
+/// </summary>
+public class FileEntryTests
+{
     [Fact]
     public void FileEntry_DefaultStatus_IsPending()
     {
@@ -101,6 +76,37 @@ public class BatchOrchestratorTests
         entry.ToString().Should().Contain("InProgress");
     }
 
+    [Fact]
+    public void FileEntry_CanSetAllProperties()
+    {
+        var entry = new FileEntry
+        {
+            Id = "file-042",
+            Name = "vendor-report.dat",
+            LegacyConfig = "host=sftp.vendor.com",
+            NewConfig = "{\"host\": \"sftp.vendor.com\"}",
+            Status = MigrationStatus.Success,
+            RetryCount = 2,
+            LastError = "previous error",
+            Protocol = "SFTP",
+            SourcePath = "/outbound/reports",
+            DestinationPath = "configs/sftp/vendor-report.json",
+            CommitHash = "abc123",
+            DeploymentId = "deploy-001"
+        };
+
+        entry.Id.Should().Be("file-042");
+        entry.Protocol.Should().Be("SFTP");
+        entry.CommitHash.Should().Be("abc123");
+        entry.DeploymentId.Should().Be("deploy-001");
+    }
+}
+
+/// <summary>
+/// Tests for MigrationReport calculations.
+/// </summary>
+public class MigrationReportTests
+{
     [Fact]
     public void MigrationReport_SuccessRate_CalculatesCorrectly()
     {
@@ -147,6 +153,25 @@ public class BatchOrchestratorTests
     }
 
     [Fact]
+    public void MigrationReport_SuccessRate_100Percent()
+    {
+        var report = new MigrationReport
+        {
+            TotalFiles = 50,
+            Succeeded = 50,
+            Failed = 0
+        };
+
+        report.SuccessRate.Should().Be(100.0);
+    }
+}
+
+/// <summary>
+/// Tests for BatchResult model.
+/// </summary>
+public class BatchResultTests
+{
+    [Fact]
     public void BatchResult_AllSucceeded_TrueWhenNoFailures()
     {
         var result = new BatchResult
@@ -172,6 +197,21 @@ public class BatchOrchestratorTests
     }
 
     [Fact]
+    public void BatchResult_Empty_AllSucceededIsTrue()
+    {
+        var result = new BatchResult();
+
+        result.AllSucceeded.Should().BeTrue();
+        result.TotalProcessed.Should().Be(0);
+    }
+}
+
+/// <summary>
+/// Tests for DryRunFlag.
+/// </summary>
+public class DryRunFlagTests
+{
+    [Fact]
     public void DryRunFlag_SetsEnabledCorrectly()
     {
         var enabled = new DryRunFlag(true);
@@ -180,13 +220,142 @@ public class BatchOrchestratorTests
         enabled.Enabled.Should().BeTrue();
         disabled.Enabled.Should().BeFalse();
     }
+}
 
-    // TODO: Add integration tests that exercise the full orchestrator pipeline
-    // with mocked external dependencies (Copilot CLI, git, gh, Octopus, Datadog).
+/// <summary>
+/// Tests for MigrationStatus enum values.
+/// </summary>
+public class MigrationStatusTests
+{
+    [Fact]
+    public void MigrationStatus_HasExpectedValues()
+    {
+        ((int)MigrationStatus.Pending).Should().Be(0);
+        ((int)MigrationStatus.InProgress).Should().Be(1);
+        ((int)MigrationStatus.Success).Should().Be(2);
+        ((int)MigrationStatus.Failed).Should().Be(3);
+        ((int)MigrationStatus.RetryPending).Should().Be(4);
+    }
+}
 
-    // TODO: Add tests for LegacyConfigParser with sample CSV input.
+/// <summary>
+/// Tests for BuildResult model.
+/// </summary>
+public class BuildResultTests
+{
+    [Fact]
+    public void BuildResult_Defaults()
+    {
+        var result = new BuildResult();
 
-    // TODO: Add tests for StateStore using an in-memory SQLite database.
+        result.Success.Should().BeFalse();
+        result.LogOutput.Should().BeEmpty();
+    }
 
-    // TODO: Add tests for ConfigTranslator response parsing (code fence extraction).
+    [Fact]
+    public void BuildResult_SuccessfulBuild()
+    {
+        var result = new BuildResult
+        {
+            Success = true,
+            RunId = "12345",
+            Conclusion = "success",
+            Url = "https://github.com/org/repo/actions/runs/12345"
+        };
+
+        result.Success.Should().BeTrue();
+        result.Conclusion.Should().Be("success");
+    }
+}
+
+/// <summary>
+/// Tests for DeploymentResult model.
+/// </summary>
+public class DeploymentResultTests
+{
+    [Fact]
+    public void DeploymentResult_Defaults()
+    {
+        var result = new DeploymentResult();
+
+        result.Success.Should().BeFalse();
+    }
+
+    [Fact]
+    public void DeploymentResult_SuccessfulDeployment()
+    {
+        var result = new DeploymentResult
+        {
+            Success = true,
+            DeploymentId = "deploy-0001",
+            Status = "Success"
+        };
+
+        result.Success.Should().BeTrue();
+        result.DeploymentId.Should().Be("deploy-0001");
+    }
+}
+
+/// <summary>
+/// Tests for LogQueryResult model.
+/// </summary>
+public class LogQueryResultTests
+{
+    [Fact]
+    public void LogQueryResult_Defaults()
+    {
+        var result = new LogQueryResult();
+
+        result.HasErrors.Should().BeFalse();
+        result.FileProcessedSuccessfully.Should().BeFalse();
+        result.ErrorCount.Should().Be(0);
+        result.TotalLogEntries.Should().Be(0);
+        result.ErrorMessages.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void LogQueryResult_WithErrors()
+    {
+        var result = new LogQueryResult
+        {
+            HasErrors = true,
+            ErrorCount = 3,
+            TotalLogEntries = 15,
+            ErrorMessages = { "ConnectionRefused", "TimeoutException", "AuthFailed" }
+        };
+
+        result.HasErrors.Should().BeTrue();
+        result.ErrorMessages.Should().HaveCount(3);
+    }
+}
+
+/// <summary>
+/// Tests for DiagnosticResult model.
+/// </summary>
+public class DiagnosticResultTests
+{
+    [Fact]
+    public void DiagnosticResult_Defaults()
+    {
+        var result = new DiagnosticResult();
+
+        result.IsRecoverable.Should().BeFalse();
+        result.SuggestedChanges.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void DiagnosticResult_RecoverableIssue()
+    {
+        var result = new DiagnosticResult
+        {
+            RootCause = "PGP key path is incorrect",
+            Analysis = "Update pgp_key_path to /keys/vendor.asc",
+            IsRecoverable = true,
+            SuggestedChanges = { "pgp_key_path=/keys/vendor.asc" }
+        };
+
+        result.IsRecoverable.Should().BeTrue();
+        result.SuggestedChanges.Should().Contain("pgp_key_path=/keys/vendor.asc");
+        result.RootCause.Should().Contain("PGP");
+    }
 }
