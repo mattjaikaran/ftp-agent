@@ -1,0 +1,73 @@
+## .NET build outputs
+bin/
+obj/
+out/
+
+## Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+## Rider
+.idea/
+
+## VS Code
+.vscode/
+
+## NuGet
+*.nupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Test results
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+
+## Sensitive configuration (never commit secrets)
+config/appsettings.Development.json
+appsettings.Development.json
+appsettings.*.local.json
+
+## SQLite state databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+## OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+## Temp files
+*.tmp
+*.temp
+*.swp
+*~
+
+## dotnet tool manifests
+#.config/
+
+## Publish profiles
+[Pp]ublish/
