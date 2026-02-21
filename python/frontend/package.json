@@ -1,0 +1,32 @@
+{
+  "name": "ftp-agent-dashboard",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.64",
+    "@tanstack/react-router": "^1.95",
+    "axios": "^1.7",
+    "clsx": "^2.1",
+    "lucide-react": "^0.468",
+    "react": "^19.0",
+    "react-dom": "^19.0",
+    "tailwind-merge": "^2.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0",
+    "@types/react": "^19.0",
+    "@types/react-dom": "^19.0",
+    "@vitejs/plugin-react": "^4.3",
+    "eslint": "^9.17",
+    "tailwindcss": "^4.0",
+    "typescript": "^5.7",
+    "vite": "^6.0"
+  }
+}
