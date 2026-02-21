@@ -1,0 +1,57 @@
+[agent]
+batch_size = 10
+max_retries_per_file = 3
+ci_build_timeout_minutes = 20
+deploy_wait_timeout_minutes = 30
+datadog_check_delay_minutes = 5
+log_query_window_minutes = 15
+poll_interval_seconds = 30
+stop_on_batch_failure = false
+max_batches_per_run = 0
+legacy_config_source_path = ""
+state_database_path = "migration-state.db"
+
+[github]
+repository = ""
+base_branch = "main"
+workflow_name = ""
+target_repo_path = ""
+
+[llm]
+provider = "minimax"
+
+[llm.minimax]
+base_url = "https://api.minimax.io/v1"
+model = "MiniMax-M2.5"
+timeout_seconds = 120
+
+[llm.anthropic]
+model = "claude-sonnet-4-20250514"
+timeout_seconds = 120
+
+[llm.openai_compat]
+base_url = "https://api.openai.com/v1"
+model = "gpt-4o"
+timeout_seconds = 120
+
+[llm.ollama]
+base_url = "http://localhost:11434"
+model = "llama3.3"
+timeout_seconds = 120
+
+[deployment]
+provider = "stub"
+
+[deployment.octopus]
+server_url = ""
+project_name = ""
+environment_name = ""
+space_id = "Spaces-1"
+
+[monitoring]
+provider = "stub"
+
+[monitoring.datadog]
+api_url = "https://api.datadoghq.com"
+service_name = ""
+environment = ""
