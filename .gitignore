@@ -79,3 +79,19 @@ Desktop.ini
 
 ## Log files
 *.log
+
+## Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+## Frontend build output (served by FastAPI)
+python/static/
+
+## Node
+node_modules/

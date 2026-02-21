@@ -1,4 +1,4 @@
-# CI/CD Pipeline for FtpAgent
+# CI/CD Pipeline for FtpAgent (C# + Python)
 # Status badge: ![CI](https://github.com/<OWNER>/ftp-agent/actions/workflows/ci.yml/badge.svg)
 
 name: CI
@@ -17,15 +17,19 @@ env:
   DOTNET_VERSION: "8.0.x"
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
+  PYTHON_VERSION: "3.12"
 
 jobs:
-  build-and-test:
-    name: Build & Test
+  # ── C# ──────────────────────────────────────────
+  csharp-build:
+    name: "C# Build & Test"
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: csharp
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
         uses: actions/setup-dotnet@v4
@@ -35,7 +39,7 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore FtpAgent.sln
 
-      - name: Build (Release, warnings as errors)
+      - name: Build (Release)
         run: dotnet build FtpAgent.sln --configuration Release --no-restore --warnaserror
 
       - name: Run tests
@@ -51,17 +55,19 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results
-          path: ./test-results/*.trx
+          name: csharp-test-results
+          path: csharp/test-results/*.trx
           retention-days: 30
 
-  code-quality:
-    name: Code Quality
+  csharp-quality:
+    name: "C# Code Quality"
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: csharp
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
         uses: actions/setup-dotnet@v4
@@ -73,3 +79,73 @@ jobs:
 
       - name: Check formatting
         run: dotnet format FtpAgent.sln --verify-no-changes --verbosity diagnostic
+
+  # ── Python ──────────────────────────────────────
+  python-test:
+    name: "Python Test"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Setup Python ${{ env.PYTHON_VERSION }}
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run tests
+        run: uv run pytest --tb=short -q
+
+  python-quality:
+    name: "Python Lint & Format"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Setup Python ${{ env.PYTHON_VERSION }}
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Ruff check
+        run: uv run ruff check ftp_agent/ tests/
+
+      - name: Ruff format check
+        run: uv run ruff format --check ftp_agent/ tests/
+
+  python-frontend:
+    name: "Frontend Build"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python/frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Type check
+        run: bun run tsc -b
+
+      - name: Build
+        run: bun run build
