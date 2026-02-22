@@ -7,7 +7,7 @@ export function LlmStatus() {
 
   if (isLoading || !data) {
     return (
-      <div className="flex items-center gap-2 rounded-lg bg-gray-100 px-3 py-1.5 text-sm text-gray-500">
+      <div className="flex items-center gap-2 rounded-lg bg-bg-inset px-3 py-1.5 text-sm text-text-muted">
         <Brain className="h-4 w-4" />
         <span>Checking LLM...</span>
       </div>
@@ -19,8 +19,8 @@ export function LlmStatus() {
       className={cn(
         "flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium",
         data.llm_healthy
-          ? "bg-green-50 text-green-700"
-          : "bg-red-50 text-red-700",
+          ? "bg-success-soft text-success"
+          : "bg-danger-soft text-danger",
       )}
     >
       <Brain className="h-4 w-4" />
@@ -29,7 +29,7 @@ export function LlmStatus() {
       <span
         className={cn(
           "inline-block h-2 w-2 rounded-full",
-          data.llm_healthy ? "bg-green-500" : "bg-red-500",
+          data.llm_healthy ? "bg-success" : "bg-danger",
         )}
       />
     </div>

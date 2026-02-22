@@ -20,16 +20,24 @@ llm_app = typer.Typer(name="llm", help="LLM provider management.")
 app.add_typer(llm_app)
 
 
-def _configure_logging(verbose: bool = False) -> None:
+def _configure_logging(verbose: bool = False, *, serve_mode: bool = False) -> None:
+    import logging
+
+    processors: list[structlog.types.Processor] = [
+        structlog.contextvars.merge_contextvars,
+        structlog.processors.add_log_level,
+        structlog.processors.TimeStamper(fmt="iso"),
+    ]
+    if serve_mode:
+        from ftp_agent.server import ws_log_processor
+
+        processors.append(ws_log_processor)
+    processors.append(structlog.dev.ConsoleRenderer())
+
     structlog.configure(
-        processors=[
-            structlog.contextvars.merge_contextvars,
-            structlog.processors.add_log_level,
-            structlog.processors.TimeStamper(fmt="iso"),
-            structlog.dev.ConsoleRenderer(),
-        ],
+        processors=processors,
         wrapper_class=structlog.make_filtering_bound_logger(
-            structlog.logging.DEBUG if verbose else structlog.logging.INFO,
+            logging.DEBUG if verbose else logging.INFO,
         ),
     )
 
@@ -132,7 +140,7 @@ def serve(
     verbose: bool = typer.Option(False, "--verbose", "-v"),
 ) -> None:
     """Start the FastAPI dashboard server."""
-    _configure_logging(verbose)
+    _configure_logging(verbose, serve_mode=True)
 
     import uvicorn
 

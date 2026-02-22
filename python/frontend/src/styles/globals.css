@@ -1,18 +1,57 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 @theme {
-  --color-primary: #2563eb;
+  /* Primary */
+  --color-primary: #3b6cf5;
+  --color-primary-hover: #2f5ad4;
   --color-primary-foreground: #ffffff;
-  --color-success: #16a34a;
-  --color-warning: #d97706;
-  --color-danger: #dc2626;
-  --color-muted: #6b7280;
-  --color-surface: #f9fafb;
-  --color-surface-dark: #111827;
-  --color-border: #e5e7eb;
+
+  /* Semantic status */
+  --color-success: #2d8a56;
+  --color-success-soft: #e8f5ee;
+  --color-warning: #c07d1a;
+  --color-warning-soft: #fef4e4;
+  --color-danger: #c9352f;
+  --color-danger-soft: #fde8e7;
+  --color-info: #3b6cf5;
+  --color-info-soft: #e9effd;
+
+  /* Light palette */
+  --color-bg: #f7f6f3;
+  --color-bg-card: #fefefe;
+  --color-bg-inset: #f1f0ec;
+  --color-border: #e8e6e1;
+  --color-border-subtle: #f0eee9;
+  --color-text: #1a1a1a;
+  --color-text-secondary: #5a5751;
+  --color-text-muted: #8c8780;
+
+  /* Muted */
+  --color-muted: #8c8780;
+  --color-surface: #f7f6f3;
+  --color-surface-dark: #141414;
 }
 
 body {
-  @apply bg-white text-gray-900 antialiased;
+  @apply bg-bg text-text antialiased;
   font-family: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+/* Dark mode overrides */
+.dark {
+  --color-bg: #141414;
+  --color-bg-card: #1a1a1a;
+  --color-bg-inset: #111111;
+  --color-border: #2a2827;
+  --color-border-subtle: #222120;
+  --color-text: #e8e6e1;
+  --color-text-secondary: #a09b94;
+  --color-text-muted: #6b6660;
+
+  --color-success-soft: #1a2e22;
+  --color-warning-soft: #2e2316;
+  --color-danger-soft: #2e1716;
+  --color-info-soft: #1a2240;
 }

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import httpx
 import structlog
@@ -103,10 +104,10 @@ class DatadogClient:
             )
             return LogQueryResult(has_errors=True, error_count=1)
 
-        events: list[dict] = data.get("data", [])
+        events: list[dict[str, Any]] = data.get("data", [])
         return self._parse_events(events)
 
-    def _parse_events(self, events: list[dict]) -> LogQueryResult:
+    def _parse_events(self, events: list[dict[str, Any]]) -> LogQueryResult:
         error_messages: list[str] = []
         warning_messages: list[str] = []
         file_success = False

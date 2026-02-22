@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Any
 
 import httpx
 import structlog
@@ -55,7 +56,7 @@ class OctopusDeployClient:
                 params={"name": env_name},
             )
             env_resp.raise_for_status()
-            envs: list[dict] = env_resp.json().get("Items", [])
+            envs: list[dict[str, Any]] = env_resp.json().get("Items", [])
             if not envs:
                 return DeploymentResult(
                     success=False,

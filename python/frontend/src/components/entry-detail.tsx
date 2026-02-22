@@ -8,41 +8,41 @@ interface EntryDetailProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  SUCCESS: "bg-green-100 text-green-800",
-  FAILED: "bg-red-100 text-red-800",
-  PENDING: "bg-gray-100 text-gray-800",
-  IN_PROGRESS: "bg-blue-100 text-blue-800",
-  RETRY_PENDING: "bg-purple-100 text-purple-800",
+  SUCCESS: "bg-success-soft text-success",
+  FAILED: "bg-danger-soft text-danger",
+  PENDING: "bg-bg-inset text-text-secondary",
+  IN_PROGRESS: "bg-info-soft text-info",
+  RETRY_PENDING: "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400",
 };
 
 export function EntryDetail({ entryId, onBack }: EntryDetailProps) {
   const { data: entry, isLoading, error } = useEntry(entryId);
 
   if (isLoading) {
-    return <div className="py-8 text-center text-gray-500">Loading entry...</div>;
+    return <div className="py-8 text-center text-text-muted">Loading entry...</div>;
   }
 
   if (error || !entry) {
-    return <div className="py-8 text-center text-red-500">Entry not found</div>;
+    return <div className="py-8 text-center text-danger">Entry not found</div>;
   }
 
   return (
     <div className="space-y-4">
       <button
         onClick={onBack}
-        className="flex items-center gap-1.5 text-sm text-gray-500 transition-colors hover:text-gray-700"
+        className="flex items-center gap-1.5 text-sm text-text-muted transition-colors hover:text-text-secondary"
       >
         <ArrowLeft className="h-4 w-4" />
         Back
       </button>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-border bg-bg-card p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">{entry.name}</h2>
+          <h2 className="text-lg font-bold text-text">{entry.name}</h2>
           <span
             className={cn(
               "rounded-full px-3 py-1 text-xs font-medium",
-              STATUS_COLORS[entry.status] ?? "bg-gray-100 text-gray-800",
+              STATUS_COLORS[entry.status] ?? "bg-bg-inset text-text-secondary",
             )}
           >
             {entry.status}
@@ -53,18 +53,18 @@ export function EntryDetail({ entryId, onBack }: EntryDetailProps) {
           <Field label="ID" value={entry.id} />
           <Field label="Protocol" value={entry.protocol} />
           <Field label="Retries" value={String(entry.retry_count)} />
-          <Field label="Commit" value={entry.commit_hash ?? "—"} mono />
-          <Field label="Deployment" value={entry.deployment_id ?? "—"} mono />
-          <Field label="Source Path" value={entry.source_path ?? "—"} />
-          <Field label="Destination Path" value={entry.destination_path ?? "—"} />
+          <Field label="Commit" value={entry.commit_hash ?? "\u2014"} mono />
+          <Field label="Deployment" value={entry.deployment_id ?? "\u2014"} mono />
+          <Field label="Source Path" value={entry.source_path ?? "\u2014"} />
+          <Field label="Destination Path" value={entry.destination_path ?? "\u2014"} />
           <Field label="Created" value={new Date(entry.created_at).toLocaleString()} />
           <Field label="Updated" value={new Date(entry.updated_at).toLocaleString()} />
         </div>
 
         {entry.last_error && (
           <div className="mt-4">
-            <p className="mb-1 text-xs font-medium text-gray-500">Last Error</p>
-            <pre className="rounded-lg bg-red-50 p-3 text-xs text-red-700">{entry.last_error}</pre>
+            <p className="mb-1 text-xs font-medium text-text-muted">Last Error</p>
+            <pre className="rounded-lg bg-danger-soft p-3 text-xs text-danger">{entry.last_error}</pre>
           </div>
         )}
       </div>
@@ -81,19 +81,19 @@ export function EntryDetail({ entryId, onBack }: EntryDetailProps) {
 function Field({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <p className="text-xs font-medium text-gray-500">{label}</p>
-      <p className={cn("mt-0.5 text-gray-900", mono && "font-mono text-xs")}>{value}</p>
+      <p className="text-xs font-medium text-text-muted">{label}</p>
+      <p className={cn("mt-0.5 text-text", mono && "font-mono text-xs")}>{value}</p>
     </div>
   );
 }
 
 function ConfigPanel({ title, content }: { title: string; content: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-      <div className="border-b border-gray-100 px-4 py-2.5">
-        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+    <div className="rounded-xl border border-border bg-bg-card shadow-sm">
+      <div className="border-b border-border-subtle px-4 py-2.5">
+        <h3 className="text-sm font-semibold text-text">{title}</h3>
       </div>
-      <pre className="max-h-80 overflow-auto whitespace-pre-wrap p-4 font-mono text-xs text-gray-700">
+      <pre className="max-h-80 overflow-auto whitespace-pre-wrap p-4 font-mono text-xs text-text-secondary">
         {content}
       </pre>
     </div>

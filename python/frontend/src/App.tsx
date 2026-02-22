@@ -5,6 +5,7 @@ import { ProgressBar } from "@/components/progress-bar";
 import { EntriesTable } from "@/components/entries-table";
 import { LogStream } from "@/components/log-stream";
 import { EntryDetail } from "@/components/entry-detail";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useStatus } from "@/hooks/use-status";
 import { useHealth } from "@/hooks/use-health";
 import { triggerRun, stopRun } from "@/lib/api";
@@ -30,31 +31,32 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-bg">
       {/* Header */}
-      <header className="border-b border-gray-200 bg-white">
+      <header className="border-b border-border bg-bg-card">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
-            <Activity className="h-6 w-6 text-blue-600" />
-            <h1 className="text-xl font-bold text-gray-900">FTP Agent</h1>
+            <Activity className="h-6 w-6 text-primary" />
+            <h1 className="text-xl font-bold text-text">FTP Agent</h1>
             {health && (
-              <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+              <span className="rounded-md bg-bg-inset px-2 py-0.5 text-xs text-text-muted">
                 v{health.version}
               </span>
             )}
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <LlmStatus />
             <button
               onClick={() => triggerRun(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
             >
               <Play className="h-4 w-4" />
               Run (Dry)
             </button>
             <button
               onClick={() => stopRun()}
-              className="flex items-center gap-1.5 rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300"
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-bg-card px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-bg-inset"
             >
               <Square className="h-4 w-4" />
               Stop
@@ -68,8 +70,8 @@ export function App() {
               onClick={() => { setPage("dashboard"); setSelectedEntryId(null); }}
               className={`border-b-2 pb-2 font-medium transition-colors ${
                 page === "dashboard"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-text-muted hover:text-text-secondary"
               }`}
             >
               Dashboard
@@ -78,8 +80,8 @@ export function App() {
               onClick={() => { setPage("entries"); setSelectedEntryId(null); }}
               className={`border-b-2 pb-2 font-medium transition-colors ${
                 page === "entries" || page === "entry-detail"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-text-muted hover:text-text-secondary"
               }`}
             >
               Entries
@@ -93,7 +95,7 @@ export function App() {
         {page === "dashboard" && (
           <>
             {statusLoading || !status ? (
-              <div className="py-12 text-center text-gray-400">Loading dashboard...</div>
+              <div className="py-12 text-center text-text-muted">Loading dashboard...</div>
             ) : (
               <>
                 <StatsCards status={status} />

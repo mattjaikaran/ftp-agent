@@ -36,6 +36,7 @@ class AgentSettings(BaseSettings):
     max_batches_per_run: int = 0
     legacy_config_source_path: str = ""
     state_database_path: str = "migration-state.db"
+    schedule_interval_hours: float = 0
 
 
 class GitHubSettings(BaseSettings):

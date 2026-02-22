@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from typing import Any
 
 import structlog
 
@@ -84,7 +85,7 @@ class GitHubActionsMonitor:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    async def _list_runs(self, commit_hash: str) -> list[dict]:
+    async def _list_runs(self, commit_hash: str) -> list[dict[str, Any]]:
         cmd: list[str] = [
             "gh",
             "run",

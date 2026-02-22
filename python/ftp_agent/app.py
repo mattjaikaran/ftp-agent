@@ -50,7 +50,7 @@ class App:
     diagnostic_engine: DiagnosticEngine
     orchestrator: BatchOrchestrator
     dry_run: bool = False
-    _closables: list = field(default_factory=list, repr=False)
+    _closables: list[object] = field(default_factory=list, repr=False)
 
     async def close(self) -> None:
         for obj in self._closables:
@@ -67,7 +67,7 @@ def create_app(settings: AppSettings | None = None, *, dry_run: bool = False) ->
 
     # LLM
     llm = create_llm_provider(settings.llm)
-    closables: list = []
+    closables: list[object] = []
     if hasattr(llm, "close"):
         closables.append(llm)
 
@@ -120,6 +120,7 @@ def create_app(settings: AppSettings | None = None, *, dry_run: bool = False) ->
     else:
         dd_client = DatadogClient(
             settings=settings.monitoring.datadog,
+            agent=settings.agent,
         )
         closables.append(dd_client)
         monitoring_client = dd_client

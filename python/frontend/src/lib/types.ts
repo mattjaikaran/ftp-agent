@@ -58,6 +58,7 @@ export interface ConfigResponse {
     batch_size: number;
     max_retries_per_file: number;
     poll_interval_seconds: number;
+    schedule_interval_hours: number;
   };
   llm: {
     provider: string;

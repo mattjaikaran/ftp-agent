@@ -9,37 +9,43 @@ from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
 import ftp_agent.server as server_module
+from ftp_agent.models.file_entry import FileEntry, MigrationStatus
 from ftp_agent.server import api_router
 
 
 @pytest.fixture
-async def client(tmp_path):
-    """Create a test client with a mock app instance."""
+async def mock_app(tmp_path):
+    """Create a mock app instance with a real state store backed by tmp DB."""
     from ftp_agent.state.store import StateStore
 
-    # Set up a real state store with tmp DB
     store = StateStore(str(tmp_path / "test.db"))
     await store.initialize()
 
-    # Create mock app instance
-    mock_app = AsyncMock()
-    mock_app.state_store = store
-    mock_app.settings = AsyncMock()
-    mock_app.settings.agent.batch_size = 10
-    mock_app.settings.agent.max_retries_per_file = 3
-    mock_app.settings.agent.poll_interval_seconds = 30
-    mock_app.settings.llm.provider.value = "minimax"
-    mock_app.settings.deployment.provider.value = "stub"
-    mock_app.settings.monitoring.provider.value = "stub"
-    mock_app.llm.provider_name = "minimax"
-    mock_app.llm.model_name = "MiniMax-M2.5"
-    mock_app.llm.health = AsyncMock(return_value=True)
+    app = AsyncMock()
+    app.state_store = store
+    app.settings = AsyncMock()
+    app.settings.agent.batch_size = 10
+    app.settings.agent.max_retries_per_file = 3
+    app.settings.agent.poll_interval_seconds = 30
+    app.settings.llm.provider.value = "minimax"
+    app.settings.deployment.provider.value = "stub"
+    app.settings.monitoring.provider.value = "stub"
+    app.llm.provider_name = "minimax"
+    app.llm.model_name = "MiniMax-M2.5"
+    app.llm.health = AsyncMock(return_value=True)
 
-    # Inject mock into server module
     original = server_module._app_instance
-    server_module._app_instance = mock_app
+    server_module._app_instance = app
 
-    # Build a simple FastAPI app with our router (no lifespan needed)
+    yield app
+
+    server_module._app_instance = original
+    await store.close()
+
+
+@pytest.fixture
+async def client(mock_app):
+    """Create a test client with the mock app instance injected."""
     app = FastAPI()
     app.include_router(api_router)
 
@@ -47,9 +53,8 @@ async def client(tmp_path):
     async with AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
 
-    # Cleanup
-    server_module._app_instance = original
-    await store.close()
+
+# --- Existing tests ---
 
 
 async def test_health(client: AsyncClient):
@@ -94,3 +99,77 @@ async def test_config_summary(client: AsyncClient):
     data = resp.json()
     assert "agent" in data
     assert "llm" in data
+
+
+# --- New tests ---
+
+
+async def test_csv_export(client: AsyncClient, mock_app):
+    """GET /api/report/csv returns CSV content-type with proper headers."""
+    # Load a sample entry so the CSV has data
+    entry = FileEntry(
+        id="csv1",
+        name="sftp-export-test",
+        legacy_config="host=old.example.com",
+        protocol="SFTP",
+    )
+    await mock_app.state_store.load_entries([entry])
+
+    resp = await client.get("/api/report/csv")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/csv")
+    assert "attachment" in resp.headers.get("content-disposition", "")
+    assert "migration-report.csv" in resp.headers["content-disposition"]
+
+    # Verify CSV structure
+    lines = resp.text.strip().splitlines()
+    assert len(lines) >= 2  # header + at least 1 data row
+    header = lines[0]
+    assert "id" in header
+    assert "name" in header
+    assert "status" in header
+    assert "protocol" in header
+
+
+async def test_entries_search(client: AsyncClient, mock_app):
+    """GET /api/entries?search=sftp filters entries by name."""
+    entries = [
+        FileEntry(id="s1", name="sftp-config-prod", legacy_config="a", protocol="SFTP"),
+        FileEntry(id="s2", name="sftp-config-staging", legacy_config="b", protocol="SFTP"),
+        FileEntry(id="s3", name="ftp-config-legacy", legacy_config="c", protocol="FTP"),
+    ]
+    await mock_app.state_store.load_entries(entries)
+
+    resp = await client.get("/api/entries?search=sftp")
+    assert resp.status_code == 200
+    data = resp.json()
+    # Only the two sftp entries should match
+    assert data["total"] == 2
+    names = [e["name"] for e in data["entries"]]
+    assert "sftp-config-prod" in names
+    assert "sftp-config-staging" in names
+    assert "ftp-config-legacy" not in names
+
+
+async def test_rollback_not_found(client: AsyncClient):
+    """POST /api/entries/nonexistent/rollback returns 404."""
+    resp = await client.post("/api/entries/nonexistent/rollback")
+    assert resp.status_code == 404
+    assert resp.json()["error"] == "Not found"
+
+
+async def test_rollback_no_commit(client: AsyncClient, mock_app):
+    """POST /api/entries/{id}/rollback returns 400 when entry has no commit_hash."""
+    entry = FileEntry(
+        id="rb1",
+        name="no-commit-entry",
+        legacy_config="host=example.com",
+        protocol="SFTP",
+        status=MigrationStatus.SUCCESS,
+        commit_hash="",  # no commit hash
+    )
+    await mock_app.state_store.load_entries([entry])
+
+    resp = await client.post("/api/entries/rb1/rollback")
+    assert resp.status_code == 400
+    assert resp.json()["error"] == "No commit to rollback"

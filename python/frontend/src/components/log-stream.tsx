@@ -4,11 +4,11 @@ import { useLogStream } from "@/hooks/use-log-stream";
 import { Wifi, WifiOff, Trash2 } from "lucide-react";
 
 const LEVEL_COLORS: Record<string, string> = {
-  debug: "text-gray-400",
-  info: "text-blue-400",
-  warning: "text-amber-400",
-  error: "text-red-400",
-  critical: "text-red-600 font-bold",
+  debug: "text-gray-400 dark:text-gray-500",
+  info: "text-blue-400 dark:text-blue-300",
+  warning: "text-amber-400 dark:text-amber-300",
+  error: "text-red-400 dark:text-red-300",
+  critical: "text-red-500 dark:text-red-400 font-bold",
 };
 
 export function LogStream() {
@@ -22,8 +22,8 @@ export function LogStream() {
   }, [messages]);
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-gray-950 shadow-sm">
-      <div className="flex items-center justify-between border-b border-gray-800 px-4 py-2.5">
+    <div className="rounded-xl border border-border bg-[#171615] shadow-sm dark:bg-[#0d0d0c]">
+      <div className="flex items-center justify-between border-b border-[#2a2827] px-4 py-2.5">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-semibold text-gray-200">Live Logs</h3>
           {connected ? (
@@ -37,7 +37,7 @@ export function LogStream() {
         </div>
         <button
           onClick={clear}
-          className="rounded p-1 text-gray-500 transition-colors hover:bg-gray-800 hover:text-gray-300"
+          className="rounded p-1 text-gray-500 transition-colors hover:bg-[#2a2827] hover:text-gray-300"
           title="Clear logs"
         >
           <Trash2 className="h-4 w-4" />
@@ -52,7 +52,7 @@ export function LogStream() {
           messages.map((msg, i) => (
             <div key={i} className="leading-5">
               <span className="text-gray-600">
-                {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : "—"}
+                {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : "\u2014"}
               </span>{" "}
               <span className={cn(LEVEL_COLORS[msg.level] ?? "text-gray-400")}>
                 [{msg.level?.toUpperCase()}]

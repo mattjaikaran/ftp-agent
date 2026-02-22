@@ -100,8 +100,8 @@ jobs:
       - name: Install dependencies
         run: uv sync --extra dev
 
-      - name: Run tests
-        run: uv run pytest --tb=short -q
+      - name: Run tests with coverage
+        run: uv run pytest tests/ --tb=short -q --cov=ftp_agent --cov-report=term-missing --cov-fail-under=65
 
   python-quality:
     name: "Python Lint & Format"
@@ -149,3 +149,19 @@ jobs:
 
       - name: Build
         run: bun run build
+
+  docker-smoke:
+    name: "Docker Build Smoke Test"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: python
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t ftp-agent:ci .
+
+      - name: Verify image exists
+        run: docker image inspect ftp-agent:ci

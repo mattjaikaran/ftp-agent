@@ -49,6 +49,13 @@ class GitManager:
         await self._run_git_command("reset", "--soft", "HEAD~1")
         log.info("git.soft_reset")
 
+    async def revert_commit(self, commit_hash: str) -> str:
+        """Revert a specific commit and return the new revert commit hash."""
+        await self._run_git_command("revert", "--no-edit", commit_hash)
+        new_hash = await self.get_current_commit_hash()
+        log.info("git.reverted", original=commit_hash, revert_commit=new_hash)
+        return new_hash
+
     async def _run_git_command(self, *args: str) -> str:
         cmd = ["git", "-C", self._repo_path, *args]
         log.debug("git.exec", cmd=cmd)

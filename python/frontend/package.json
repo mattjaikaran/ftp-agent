@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.64",
@@ -21,12 +23,17 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^19.0",
     "@types/react-dom": "^19.0",
     "@vitejs/plugin-react": "^4.3",
     "eslint": "^9.17",
+    "jsdom": "^28.1.0",
+    "msw": "^2.12.10",
     "tailwindcss": "^4.0",
     "typescript": "^5.7",
-    "vite": "^6.0"
+    "vite": "^6.0",
+    "vitest": "^4.0.18"
   }
 }

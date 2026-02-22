@@ -11,17 +11,18 @@ interface StatCardProps {
   value: number;
   icon: React.ReactNode;
   color: string;
+  bgColor: string;
 }
 
-function StatCard({ label, value, icon, color }: StatCardProps) {
+function StatCard({ label, value, icon, color, bgColor }: StatCardProps) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="rounded-xl border border-border bg-bg-card p-5 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-500">{label}</p>
+          <p className="text-sm font-medium text-text-muted">{label}</p>
           <p className={cn("mt-1 text-3xl font-bold", color)}>{value}</p>
         </div>
-        <div className={cn("rounded-lg p-3", color.replace("text-", "bg-") + "/10")}>
+        <div className={cn("rounded-lg p-3", bgColor)}>
           {icon}
         </div>
       </div>
@@ -35,32 +36,37 @@ export function StatsCards({ status }: StatsCardsProps) {
       <StatCard
         label="Succeeded"
         value={status.succeeded}
-        icon={<CheckCircle className="h-6 w-6 text-green-600" />}
-        color="text-green-600"
+        icon={<CheckCircle className="h-6 w-6 text-success" />}
+        color="text-success"
+        bgColor="bg-success-soft"
       />
       <StatCard
         label="Failed"
         value={status.failed}
-        icon={<XCircle className="h-6 w-6 text-red-600" />}
-        color="text-red-600"
+        icon={<XCircle className="h-6 w-6 text-danger" />}
+        color="text-danger"
+        bgColor="bg-danger-soft"
       />
       <StatCard
         label="Pending"
         value={status.pending}
-        icon={<Clock className="h-6 w-6 text-amber-600" />}
-        color="text-amber-600"
+        icon={<Clock className="h-6 w-6 text-warning" />}
+        color="text-warning"
+        bgColor="bg-warning-soft"
       />
       <StatCard
         label="In Progress"
         value={status.in_progress}
-        icon={<Loader2 className="h-6 w-6 text-blue-600" />}
-        color="text-blue-600"
+        icon={<Loader2 className="h-6 w-6 text-info" />}
+        color="text-info"
+        bgColor="bg-info-soft"
       />
       <StatCard
         label="Retry Pending"
         value={status.retry_pending}
-        icon={<RotateCcw className="h-6 w-6 text-purple-600" />}
-        color="text-purple-600"
+        icon={<RotateCcw className="h-6 w-6 text-purple-500 dark:text-purple-400" />}
+        color="text-purple-500 dark:text-purple-400"
+        bgColor="bg-purple-50 dark:bg-purple-950/40"
       />
     </div>
   );
